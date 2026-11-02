@@ -1,0 +1,8 @@
+{
+  "Enabled": true,
+  "IntervalSeconds": 2,
+  "MaxTransferAttempts": 64,
+  "MaxItemChecks": 256,
+  "SoftTimeBudgetMs": 10,
+  "DryRun": false
+}
