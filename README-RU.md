@@ -1,4 +1,4 @@
-# AutoSorter 0.2.0 для Space Engineers 2
+# AutoSorter 0.2.1 для Space Engineers 2
 
 [English instructions](README.md) · [English description](DESCRIPTION-EN.md)
 
@@ -27,7 +27,7 @@
 
 ## Установка
 
-1. Закройте игру и распакуйте **всю папку AutoSorter** из `AutoSorter-0.2.0.zip`, например в `D:\SE2Mods\AutoSorter`. Все DLL должны лежать рядом.
+1. Закройте игру и распакуйте **всю папку AutoSorter** из `AutoSorter-0.2.1.zip`, например в `D:\SE2Mods\AutoSorter`. Все DLL должны лежать рядом.
 2. Steam → Space Engineers 2 → Свойства → Общие → Параметры запуска.
 3. При использовании вместе с установленным BuildPlanner укажите ОДИН параметр:
 
@@ -43,7 +43,7 @@
 
 Если уже есть `-plugins:`, добавьте путь через `;` внутрь существующего параметра. Не создавайте второй `-plugins:`: загрузчик игры читает только первый. Остальные параметры запуска сохраняйте.
 
-4. Запустите игру. В `AutoSorter.log` рядом с DLL должны появиться `AutoSorter 0.2.0 ready` и `Input host captured`.
+4. Запустите игру. В `AutoSorter.log` рядом с DLL должны появиться `AutoSorter 0.2.1 ready` и `Input host captured`.
 5. В мире положите образцы в контейнеры. Каждые 30 секунд лог сообщает число подходящих инвентарей и назначенных получателей. Успешные проходы записывают `moved=...` — число успешных операций, не число предметов.
 
 ## Первая проверка в игре
@@ -86,3 +86,8 @@ dotnet run --project tests/AutoSorter.Tests.csproj -c Release
 
 Исходный ориентир — BuildPlanner от Vito Pistelli, MIT: https://github.com/viligante8/SpaceEngineers2BuildPlanner . Его схему загрузки и примеры API использовали при разработке; исходники игрового движка и игровые DLL в пакет не входят. Уведомления о лицензиях приложены.
 
+
+
+Версия 0.2.1: зарегистрированные инструменты и оружие исключаются до определения категории, даже если мод присвоил им флаги материалов/компонентов. Выгрузка рюкзака по Alt+N относится к BuildPlanner и требует отдельного исправления BuildPlanner.
+
+[Changelog / История изменений](CHANGELOG.md)

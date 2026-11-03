@@ -1,4 +1,4 @@
-# AutoSorter 0.2.0 for Space Engineers 2
+# AutoSorter 0.2.1 for Space Engineers 2
 
 [Русская инструкция](README-RU.md)
 
@@ -28,7 +28,7 @@ Assignments are recalculated from current contents; they are not saved permanent
 - Correctly stored items stay where they are. Containers of the same category do not drain or balance each other.
 - If a destination fills up, another matching reachable destination is tried. Items without a suitable destination stay at their source.
 
-Optional exclusion: add `[NoSort]` to a container's name to leave it completely untouched. `[Не сортировать]` also works. Exclusion tags are case insensitive. Old `[Ore]`, `[Ingots]`, and `[Components]` name tags do not assign categories in version 0.2.0.
+Optional exclusion: add `[NoSort]` to a container's name to leave it completely untouched. `[Не сортировать]` also works. Exclusion tags are case insensitive. Old `[Ore]`, `[Ingots]`, and `[Components]` name tags do not assign categories in version 0.2.1.
 
 ## Language and scope
 
@@ -40,7 +40,7 @@ This version targets a local world with server simulation in the game process. R
 
 ## Installation
 
-1. Close the game. Extract the **entire AutoSorter folder** from `AutoSorter-0.2.0.zip` to a permanent writable location, for example `D:\SE2Mods\AutoSorter`. Keep every bundled DLL together.
+1. Close the game. Extract the **entire AutoSorter folder** from `AutoSorter-0.2.1.zip` to a permanent writable location, for example `D:\SE2Mods\AutoSorter`. Keep every bundled DLL together.
 2. In Steam, right-click **Space Engineers 2 → Properties → General → Launch Options**.
 3. To run AutoSorter on its own, enter:
 
@@ -56,7 +56,7 @@ Use your actual installation path. If you also use BuildPlanner, combine the pat
 
 If you already have a `-plugins:` argument, append AutoSorter's path to it with a semicolon. Do not add a second `-plugins:` argument: the loader reads the first one. Keep any unrelated launch options.
 
-4. Start the game. Look for `AutoSorter 0.2.0 ready` and `Input host captured` in `AutoSorter.log` next to the DLL.
+4. Start the game. Look for `AutoSorter 0.2.1 ready` and `Input host captured` in `AutoSorter.log` next to the DLL.
 5. Load your test world, connect cargo containers, and place the samples. The log reports eligible inventories and destinations every 30 seconds. `moved` counts successful transfer operations, not individual items.
 
 To update, close the game and replace the files in the AutoSorter folder with the new archive. Back up your `AutoSorter.json` first if you customized it. There is no in-game settings panel in this version.
@@ -107,3 +107,8 @@ The policy tests do not replace in-game validation of inventories, capacity, con
 ## Credits and licenses
 
 Developed using [BuildPlanner by Vito Pistelli](https://github.com/viligante8/SpaceEngineers2BuildPlanner) as a reference for plugin loading and inventory API usage. BuildPlanner is MIT licensed; its notice is included. AutoSorter and bundled third-party notices are included in `LICENSE`, `LICENSE-BuildPlanner.txt`, and `THIRD-PARTY-NOTICES.txt`. Game DLLs and decompiled game source are not distributed in this package.
+
+
+Version 0.2.1: registered hand tools and weapons are excluded before category classification, even if a mod assigns material/component flags. Alt+N backpack deposit belongs to BuildPlanner and requires the separate BuildPlanner tool fix.
+
+[Changelog / История изменений](CHANGELOG.md)

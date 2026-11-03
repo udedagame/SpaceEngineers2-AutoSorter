@@ -15,8 +15,9 @@ AutoSorter checks conveyor connections, direction, and item filters. Correctly s
 
 **Standalone:** BuildPlanner is not required. Classification uses internal item types and does not depend on your interface language. English installation instructions are included.
 
-**Distribution:** this is a manually installed plugin loaded through the game's `-plugins:` launch option, not a Steam Workshop mod. Version 0.2.0 targets local worlds and vanilla cargo containers owned by the local player. Remote and dedicated servers are not supported.
+**Distribution:** this is a manually installed plugin loaded through the game's `-plugins:` launch option, not a Steam Workshop mod. Version 0.2.1 targets local worlds and vanilla cargo containers owned by the local player. Remote and dedicated servers are not supported.
 
 **Experimental release:** build, policy tests, and isolated hook loading passed. In-game transfers have not yet been validated. Start with a test world or a copy of your save. Game updates may require plugin updates.
 
 See `README.md` for setup, settings, and the first-run checklist.
+

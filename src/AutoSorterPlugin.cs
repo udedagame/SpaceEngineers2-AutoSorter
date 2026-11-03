@@ -61,7 +61,7 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
                 orig(self, lifetime);
                 OnUpdate(self, lifetime);
             });
-            Log.Write($"AutoSorter 0.2.0 ready (content-based). Enabled={_settings.Enabled}, DryRun={_settings.DryRun}. Game assembly={typeof(InventoryComponent).Assembly.GetName().Version}");
+            Log.Write($"AutoSorter 0.2.1 ready (content-based). Enabled={_settings.Enabled}, DryRun={_settings.DryRun}. Game assembly={typeof(InventoryComponent).Assembly.GetName().Version}");
         }
         catch (Exception e)
         {
@@ -112,6 +112,12 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
 
     private static void Sort(Session session, IdentityId player, RunState state)
     {
+        var tools = Keen.VRage.Library.Utils.Singleton<Keen.VRage.Library.Definitions.DefinitionManager>.Instance
+            .GetConfiguration<Keen.Game2.Simulation.WorldObjects.Characters.ToolsConfiguration>();
+        var protectedItems = new HashSet<Guid>();
+        foreach (var item in tools.ItemPrefabs.Values) protectedItems.Add(item.Guid);
+        foreach (var item in tools.GunItems.Values) protectedItems.Add(item.Guid);
+        Category Classify(ItemDefinition item) => protectedItems.Contains(item.Guid) ? Category.None : GetCategory(item.Type);
         var cargos = new Dictionary<InventoryComponent, Cargo>();
         var work = new List<Work>();
         foreach (var entity in session.GetEntitiesOfType<FunctionalBlockComponent>())
@@ -127,7 +133,7 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
                 if (component is not InventoryComponent inv || inv.ConveyorSystem == null) continue;
                 // Classify once per pass; transfers cannot turn a source into a destination mid-pass.
                 var categories = new List<Category>();
-                foreach (var stack in inv.Items) categories.Add(GetCategory(stack.Definition.Type));
+                foreach (var stack in inv.Items) categories.Add(Classify(stack.Definition));
                 var rule = ContainerRule.FromContents(categories, name);
                 if (rule.Excluded) continue;
                 var cargo = new Cargo(inv, rule, name);
@@ -136,7 +142,7 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
                 foreach (var stack in inv.Items)
                 {
                     var item = stack.Definition;
-                    var category = GetCategory(item.Type);
+                    var category = Classify(item);
                     if (category != Category.None && !rule.Keeps(category) && seen.Add(item))
                         work.Add(new Work(cargo, item, category));
                 }
@@ -165,6 +171,7 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
                     || !Routing.ShouldMove(task.Source.Rule, target.Rule, task.Category, ReferenceEquals(source, destination), true)) continue;
                 if (!session.IsEntityInScene(source.Entity) || !session.IsEntityInScene(destination.Entity)) break;
                 if (source.CountItem(task.Item) <= 0) break;
+                if (protectedItems.Contains(task.Item.Guid)) continue;
                 attempts++;
                 if (_settings.DryRun) { planned++; continue; }
                 var amount = source.TransferByDef(destination, task.Item, null, null, true);
@@ -185,3 +192,4 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
         return Category.None;
     }
 }
+
