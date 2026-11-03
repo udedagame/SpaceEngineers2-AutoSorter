@@ -1,5 +1,9 @@
 # AutoSorter 0.2.1 for Space Engineers 2
+## Download / Скачать
 
+[⬇ Download AutoSorter 0.2.1 / Скачать AutoSorter 0.2.1](https://github.com/udedagame/SpaceEngineers2-AutoSorter/releases/download/v0.2.1/AutoSorter-0.2.1.zip)
+
+[Installation / Установка](https://github.com/udedagame/SpaceEngineers2-AutoSorter/releases/tag/v0.2.1)
 [Русская инструкция](README-RU.md)
 
 Automatically sort cargo by what is already inside each container. No category tags or block renaming required. AutoSorter is a standalone **plugin**, not a Steam Workshop mod. BuildPlanner is not required.
