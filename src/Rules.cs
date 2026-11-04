@@ -26,6 +26,17 @@ public readonly record struct ContainerRule(Category Accepts, bool Excluded)
 // Pure policy used by the live adapter and the standalone regression tests.
 public static class Routing
 {
+    // Cross-grid transfers only unload a mobile grid into a static station.
+    public static bool AllowsRoute(bool sameGrid, bool sourceStatic, bool targetStatic)
+        => sameGrid || (!sourceStatic && targetStatic);
+
+    public static bool CanSupply(ContainerRule from, Category item, bool sameGrid, bool sourceStatic, bool targetStatic)
+        => !from.Excluded && item != Category.None && AllowsRoute(sameGrid, sourceStatic, targetStatic)
+            && (!from.Keeps(item) || (!sameGrid && !sourceStatic && targetStatic));
+
+    public static bool CanReceive(ContainerRule to, Category item, bool empty, bool seededGrid)
+        => !to.Excluded && item != Category.None && (to.Keeps(item) || (empty && seededGrid));
+
     public static bool ShouldMove(ContainerRule from, ContainerRule to, Category item, bool sameInventory, bool reachable)
         => !sameInventory && reachable && !from.Excluded && !from.Keeps(item) && to.Keeps(item);
 

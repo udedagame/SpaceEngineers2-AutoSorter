@@ -8,6 +8,9 @@ using Keen.Game2.Simulation.RuntimeSystems.CoreScenes;
 using Keen.Game2.Simulation.GameSystems.Ownership;
 using Keen.Game2.Simulation.Utils;
 using Keen.Game2.Simulation.WorldObjects.CubeBlocks;
+using Keen.Game2.Simulation.WorldObjects.CubeGrids;
+using Keen.Game2.Simulation.WorldObjects.CubeGrids.Physicss;
+using Keen.VRage.Physics.Data;
 using Keen.Game2.Simulation.WorldObjects.CubeGrids.ResourceDistribution.Conveyors;
 using Keen.Game2.Simulation.WorldObjects.Items;
 using Keen.VRage.Core.Game.Systems;
@@ -33,6 +36,7 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
 
     public void Dispose()
     {
+        DepositProtection.Dispose();
         _updateHook?.Dispose(); _updateHook = null;
         _inputHook?.Dispose(); _inputHook = null;
         _host = null;
@@ -46,6 +50,7 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
         try
         {
             _settings = Settings.Load();
+            DepositProtection.Install(() => _settings.Enabled && !_settings.DryRun);
             var init = typeof(InputGameComponent).GetMethod("Init", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                 null, Type.EmptyTypes, null) ?? throw new MissingMethodException("InputGameComponent.Init");
             var update = typeof(Session).GetMethod(nameof(Session.Update), new[] { typeof(bool) })
@@ -61,10 +66,11 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
                 orig(self, lifetime);
                 OnUpdate(self, lifetime);
             });
-            Log.Write($"AutoSorter 0.2.1 ready (content-based). Enabled={_settings.Enabled}, DryRun={_settings.DryRun}. Game assembly={typeof(InventoryComponent).Assembly.GetName().Version}");
+            Log.Write($"AutoSorter 0.2.3 ready (content-based). Enabled={_settings.Enabled}, DryRun={_settings.DryRun}. Game assembly={typeof(InventoryComponent).Assembly.GetName().Version}");
         }
         catch (Exception e)
         {
+            DepositProtection.Dispose();
             _inputHook?.Dispose(); _inputHook = null;
             _updateHook?.Dispose(); _updateHook = null;
             Log.Write("DISABLED: initialization failed: " + e);
@@ -107,23 +113,25 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
         public long NextReport;
     }
 
-    private sealed record Cargo(InventoryComponent Inventory, ContainerRule Rule, string Name);
+    private sealed record Cargo(InventoryComponent Inventory, ContainerRule Rule, string Name, CubeGridComponent Grid, bool IsStatic);
     private sealed record Work(Cargo Source, ItemDefinition Item, Category Category);
 
     private static void Sort(Session session, IdentityId player, RunState state)
     {
         var tools = Keen.VRage.Library.Utils.Singleton<Keen.VRage.Library.Definitions.DefinitionManager>.Instance
             .GetConfiguration<Keen.Game2.Simulation.WorldObjects.Characters.ToolsConfiguration>();
-        var protectedItems = new HashSet<Guid>();
-        foreach (var item in tools.ItemPrefabs.Values) protectedItems.Add(item.Guid);
-        foreach (var item in tools.GunItems.Values) protectedItems.Add(item.Guid);
+        var protectedItems = DepositProtection.GetProtectedItems(tools);
         Category Classify(ItemDefinition item) => protectedItems.Contains(item.Guid) ? Category.None : GetCategory(item.Type);
         var cargos = new Dictionary<InventoryComponent, Cargo>();
         var work = new List<Work>();
         foreach (var entity in session.GetEntitiesOfType<FunctionalBlockComponent>())
         {
             var block = entity.TryGet<FunctionalBlockComponent>();
-            if (block == null || !block.Functional || block.Definition.BlockKind?.Guid != CargoKind) continue;
+            if (block == null || block.Grid == null || !block.Functional || block.Definition.BlockKind?.Guid != CargoKind) continue;
+            var grid = block.Grid;
+            if (grid == null) continue;
+            var physics = grid.Entity.TryGet<GridPhysicsComponent>();
+            if (physics == null) continue;
             // A block can supply an owner itself, otherwise ownership belongs to its grid.
             var owner = entity.TryGetOwner() ?? block.Grid?.Entity.TryGetOwner();
             if (!owner.HasValue || !owner.Value.Equals(player)) continue;
@@ -136,14 +144,14 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
                 foreach (var stack in inv.Items) categories.Add(Classify(stack.Definition));
                 var rule = ContainerRule.FromContents(categories, name);
                 if (rule.Excluded) continue;
-                var cargo = new Cargo(inv, rule, name);
+                var cargo = new Cargo(inv, rule, name, grid, physics.GridMotionType == BodyArgs.Motion.Static);
                 cargos.Add(inv, cargo);
                 var seen = new HashSet<ItemDefinition>();
                 foreach (var stack in inv.Items)
                 {
                     var item = stack.Definition;
                     var category = Classify(item);
-                    if (category != Category.None && !rule.Keeps(category) && seen.Add(item))
+                    if (category != Category.None && seen.Add(item))
                         work.Add(new Work(cargo, item, category));
                 }
             }
@@ -163,19 +171,37 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
             state.Cursor = Routing.Next(state.Cursor, work.Count);
             checkedItems++;
             var source = task.Source.Inventory;
-            // Enumerate with the REAL item and outbound direction; TransferByDef itself has no path check.
+            // Snapshot reachable inventories before mutation; use actual item and outbound direction.
+            var reachable = new List<Cargo>();
             foreach (var destination in ConveyorSystemComponent.IterateReachableInventories(source, task.Item, followEdgeDirection: true))
+                if (cargos.TryGetValue(destination, out var target) && !ReferenceEquals(source, destination)
+                    && Routing.CanSupply(task.Source.Rule, task.Category, ReferenceEquals(task.Source.Grid, target.Grid), task.Source.IsStatic, target.IsStatic))
+                    reachable.Add(target);
+            // Empty overflow is allowed only on a grid with a reachable, seeded store of this category.
+            var seededGrids = reachable.Where(x => x.Rule.Keeps(task.Category)).Select(x => x.Grid).ToHashSet();
+            foreach (var target in reachable
+                .OrderByDescending(x => x.IsStatic && !task.Source.IsStatic)
+                .ThenByDescending(x => x.Rule.Keeps(task.Category))
+                .ThenByDescending(x => x.Inventory.Mass.Max))
             {
                 if (attempts >= _settings.MaxTransferAttempts || watch.ElapsedMilliseconds >= _settings.SoftTimeBudgetMs) break;
-                if (!cargos.TryGetValue(destination, out var target)
-                    || !Routing.ShouldMove(task.Source.Rule, target.Rule, task.Category, ReferenceEquals(source, destination), true)) continue;
-                if (!session.IsEntityInScene(source.Entity) || !session.IsEntityInScene(destination.Entity)) break;
+                var destination = target.Inventory;
+                // Re-read the pass assignment: an empty container may already have received another category.
+                var current = cargos[destination];
+                if (!Routing.CanReceive(current.Rule, task.Category, destination.Items.Length == 0, seededGrids.Contains(target.Grid))) continue;
+                if (!session.IsEntityInScene(source.Entity)) break;
+                if (!session.IsEntityInScene(destination.Entity)) continue;
                 if (source.CountItem(task.Item) <= 0) break;
                 if (protectedItems.Contains(task.Item.Guid)) continue;
+                if (destination.Mass.Current >= destination.Mass.Max) continue;
                 attempts++;
                 if (_settings.DryRun) { planned++; continue; }
                 var amount = source.TransferByDef(destination, task.Item, null, null, true);
-                if (amount > 0) moved++;
+                if (amount > 0)
+                {
+                    moved++;
+                    cargos[destination] = current with { Rule = new ContainerRule(task.Category, false) };
+                }
             }
             if (attempts >= _settings.MaxTransferAttempts || watch.ElapsedMilliseconds >= _settings.SoftTimeBudgetMs) break;
         }
@@ -192,4 +218,5 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
         return Category.None;
     }
 }
+
 
