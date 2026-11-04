@@ -66,7 +66,7 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
                 orig(self, lifetime);
                 OnUpdate(self, lifetime);
             });
-            Log.Write($"AutoSorter 0.2.3 ready (content-based). Enabled={_settings.Enabled}, DryRun={_settings.DryRun}. Game assembly={typeof(InventoryComponent).Assembly.GetName().Version}");
+            Log.Write($"AutoSorter 0.2.4 ready (content-based). Enabled={_settings.Enabled}, DryRun={_settings.DryRun}. Game assembly={typeof(InventoryComponent).Assembly.GetName().Version}");
         }
         catch (Exception e)
         {
@@ -194,13 +194,19 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
                 if (source.CountItem(task.Item) <= 0) break;
                 if (protectedItems.Contains(task.Item.Guid)) continue;
                 if (destination.Mass.Current >= destination.Mass.Max) continue;
-                attempts++;
-                if (_settings.DryRun) { planned++; continue; }
-                var amount = source.TransferByDef(destination, task.Item, null, null, true);
-                if (amount > 0)
+                // Descending live indices remain valid when a whole stack is removed.
+                for (int index = source.Items.Length - 1; index >= 0; index--)
                 {
-                    moved++;
-                    cargos[destination] = current with { Rule = new ContainerRule(task.Category, false) };
+                    if (attempts >= _settings.MaxTransferAttempts || watch.ElapsedMilliseconds >= _settings.SoftTimeBudgetMs) break;
+                    if (source.Items[index].Definition != task.Item) continue;
+                    attempts++;
+                    if (_settings.DryRun) { planned++; continue; }
+                    var amount = InventoryTransfer.MoveStack(source, destination, index);
+                    if (amount > 0)
+                    {
+                        moved++;
+                        cargos[destination] = current with { Rule = new ContainerRule(task.Category, false) };
+                    }
                 }
             }
             if (attempts >= _settings.MaxTransferAttempts || watch.ElapsedMilliseconds >= _settings.SoftTimeBudgetMs) break;
@@ -218,5 +224,6 @@ public sealed class AutoSorterPlugin : IPlugin, IDisposable
         return Category.None;
     }
 }
+
 
 
