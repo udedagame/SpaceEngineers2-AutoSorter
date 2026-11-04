@@ -4,11 +4,17 @@ param(
     [string]$OutputDirectory = (Split-Path $PSScriptRoot -Parent)
 )
 $ErrorActionPreference = 'Stop'
-& $Dotnet build (Join-Path $PSScriptRoot 'AutoSorter.csproj') -c Release "-p:GameDir=$GameDir" --nologo
+& $Dotnet build (Join-Path $PSScriptRoot 'AutoSorter.csproj') -c Release "-p:GameDir=$GameDir" -p:NuGetAudit=false --nologo
 if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
-& $Dotnet run --project (Join-Path $PSScriptRoot 'tests/AutoSorter.Tests.csproj') -c Release
+& $Dotnet run --project (Join-Path $PSScriptRoot 'tests/AutoSorter.Tests.csproj') -c Release -p:NuGetAudit=false
 if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
 $binaryDir = Join-Path $PSScriptRoot 'bin/Release/net9.0'
+& $Dotnet run --project (Join-Path $PSScriptRoot 'tools/TransferCheck') -c Release -p:NuGetAudit=false "-p:GameDir=$GameDir" -- $GameDir
+if ($LASTEXITCODE -ne 0) { throw 'Transfer regression checks failed' }
+foreach ($check in @('LoadCheck', 'ToolProtectionCheck')) {
+    & $Dotnet run --project (Join-Path $PSScriptRoot "tools/$check") -c Release -p:NuGetAudit=false -- $binaryDir $GameDir
+    if ($LASTEXITCODE -ne 0) { throw "$check failed" }
+}
 $stageRoot = Join-Path ([IO.Path]::GetTempPath()) ('AutoSorter-package-' + [guid]::NewGuid())
 $stage = Join-Path $stageRoot 'AutoSorter'
 New-Item -ItemType Directory -Path $stage -Force | Out-Null
@@ -25,10 +31,11 @@ Get-ChildItem -LiteralPath $stage -File | Sort-Object Name | ForEach-Object {
     '{0}  {1}' -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash, $_.Name
 } | Set-Content -LiteralPath (Join-Path $stage 'SHA256SUMS.txt') -Encoding utf8
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
-$zip = Join-Path $OutputDirectory 'AutoSorter-0.2.3.zip'
+$zip = Join-Path $OutputDirectory 'AutoSorter-0.2.4.zip'
 Compress-Archive -LiteralPath $stage -DestinationPath $zip -Force
 Write-Output "Package: $zip"
 # Leave only this small staging directory for inspection; no recursive cleanup of computed paths.
+
 
 
 

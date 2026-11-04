@@ -1,4 +1,4 @@
-# AutoSorter 0.2.3 for Space Engineers 2
+# AutoSorter 0.2.4 for Space Engineers 2
 
 [Русская инструкция](README-RU.md)
 
@@ -44,6 +44,12 @@ Exceptions disable sorting for the world session and are logged. Reload after ad
 Plugin loading was informed by Vito Pistelli's BuildPlanner (MIT). Original license notices are preserved. Game DLLs are not distributed.
 
 
-## Quick-deposit tool protection (0.2.3)
+## Quick-deposit tool protection (0.2.4)
 
 Protects the vanilla bulk-deposit interaction used while aiming at a container (Alt + right mouse button). The game checks EssentialItems, which may omit modded tools. AutoSorter additionally excludes registered hand tools and weapons, including AreaTools, only during that synchronous bulk operation. Explicit manual inventory transfers remain available. No game or mod files are changed. Enabled=false or DryRun=true disables this guard. BuildPlanner Alt+N is a separate operation and requires BuildPlanner's own tool-protection fix.
+
+
+## 0.2.4: батареи / batteries
+RU: Исправлено дублирование батарей при сортировке. Перенос по отдельным ячейкам сохраняет заряд, проверяет свободные ячейки и количество предметов. Уже созданные дубликаты не удаляются. Проверка в игровом мире ещё требуется.
+EN: Fix battery duplication with per-slot transfers, charge metadata preservation, slot-capacity preflight and quantity conservation checks. Existing duplicates are not removed. Live-world validation pending.
+

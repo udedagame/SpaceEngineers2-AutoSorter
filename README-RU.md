@@ -1,4 +1,4 @@
-# AutoSorter 0.2.3 для Space Engineers 2
+# AutoSorter 0.2.4 для Space Engineers 2
 
 [English](README.md)
 
@@ -51,6 +51,12 @@ dotnet run --project tests/AutoSorter.Tests.csproj -c Release
 Ориентир загрузки плагина — BuildPlanner от Vito Pistelli (MIT). Лицензии сохранены в пакете; игровые DLL не распространяются.
 
 
-## Защита инструментов при Alt + ПКМ (0.2.3)
+## Защита инструментов при Alt + ПКМ (0.2.4)
 
 Защищена штатная быстрая выгрузка при наведении на контейнер с закрытым инвентарём. Игра использует список EssentialItems, который может не содержать модовые инструменты. AutoSorter дополнительно исключает зарегистрированные ручные инструменты и оружие, включая AreaTools, только на время этой массовой операции. Обычный ручной перенос предмета через инвентарь остаётся доступным. Файлы игры и мода не меняются. При Enabled=false или DryRun=true дополнительная защита выключена. Alt+N BuildPlanner — другая команда, для неё нужен BuildPlanner с собственным исправлением защиты инструментов.
+
+
+## 0.2.4: батареи / batteries
+RU: Исправлено дублирование батарей при сортировке. Перенос по отдельным ячейкам сохраняет заряд, проверяет свободные ячейки и количество предметов. Уже созданные дубликаты не удаляются. Проверка в игровом мире ещё требуется.
+EN: Fix battery duplication with per-slot transfers, charge metadata preservation, slot-capacity preflight and quantity conservation checks. Existing duplicates are not removed. Live-world validation pending.
+

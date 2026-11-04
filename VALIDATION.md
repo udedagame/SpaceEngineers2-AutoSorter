@@ -1,21 +1,22 @@
-# Validation — AutoSorter 0.2.3
+# Validation — AutoSorter 0.2.4
 
-2026-11-04
+2026-11-04. Based on published 0.2.3 source (main e0d0ea0d79cc856960acd275549403a961604ce4).
 
-- Starting source: local AutoSorter 0.2.1 source; its binary SHA-256 matched installed D:\SE2Mods\AutoSorter\AutoSorter.dll: 5453911ECDA84DDB68DAF149F85D7C0D982B3A4EB30F82AD5CD35CB4FC637070.
-- Release build against installed Space Engineers 2 game assemblies: successful, no C# warnings/errors.
-- NuGet emitted NU1900 because its vulnerability-data endpoint was unreachable. Existing cached dependencies were used; no dependency versions changed. Vulnerability audit was not completed.
-- Standalone regression suite: 251 assertions passed, covering classification, exclusions, same-grid storage, empty overflow policy, category claims, station-to-ship blocking, mobile-to-static unloading, peer-grid isolation, and a simulated full-store/overflow scenario with conserved item count.
-- Hook smoke check: both input and session-update hooks installed and removed against actual installed game DLLs.
-- No live world loaded or modified. Capacity behavior of real inventories, connector topology, static-station detection in an actual docked world, conveyor filters and multiplayer are NOT validated by the standalone tests or hook smoke check.
+- Original game TransferByDef reproduced creation of extra items: four batteries with distinct ResourceContainerItemMetaData became seven total after one call.
+- TransferCheck executes actual installed game inventory-data methods and the new destination-slot selection helper on synthetic inventories. 117 assertions: four batteries stay four, charge metadata preserved, 100 round trips, full mass, full slots, partial ore moves, merge into existing stack at slot limit, and distinct metadata never merged.
+- No copied/decompiled game implementation is included in the source or binary distribution. Tests require the user's installed game DLLs.
+- Runtime wrapper still uses the game's TransferByIdx inventory-filter checks. After each automatic transfer, source and destination quantity deltas must both match the returned amount; otherwise sorting stops for the session. This diagnostic does not roll back an unexpected engine or third-party failure.
+- No world loaded or modified. Conveyor topology, live UI interaction, other-plugin interaction and real save behavior remain pending. Release is marked pre-release.
+- NuGet online vulnerability audit disabled for offline cached build; dependency versions unchanged.
 
-A saved GridMotionType is used instead of transient body motion/parking state. Mobile space bases remain mobile; cross-grid transfer between mobile grids is intentionally disabled. Live-world checklist is in README-RU.md and README.md.
+Reproduce with a .NET 9 SDK:
+```
+dotnet build AutoSorter.csproj -c Release -p:NuGetAudit=false
+dotnet run --project tests -c Release -p:NuGetAudit=false
+dotnet run --project tools/TransferCheck -c Release -p:NuGetAudit=false -- "D:\SteamLibrary\steamapps\common\SpaceEngineers2\Game2"
+dotnet run --project tools/LoadCheck -c Release -p:NuGetAudit=false -- bin/Release/net9.0 "D:\SteamLibrary\steamapps\common\SpaceEngineers2\Game2"
+dotnet run --project tools/ToolProtectionCheck -c Release -p:NuGetAudit=false -- bin/Release/net9.0 "D:\SteamLibrary\steamapps\common\SpaceEngineers2\Game2"
+```
 
+Verified results: Release build 0 warnings / 0 errors; 251 routing assertions; 117 actual-game inventory-data assertions; all four hooks installed/disposed and nested/exception/thread guard scope checks passed.
 
-0.2.3 additional validation:
-- Local installed AreaTools registry: three registered item GUIDs found in ToolsConfiguration_AreaTools.partialdef. No mod files are bundled.
-- Confirmed UseConveyorAction.DepositNonEssentialItems calls vanilla InProcessGameServerSessionComponent bulk deposit; the original bulk loop checks EssentialItems and calls TransferByIdx synchronously.
-- 28 assertions against the built protected-tool registry and actual game types passed, including all three AreaTools GUIDs with ore/material/component/all flags and ordinary unregistered materials.
-- All four hooks installed successfully against installed game DLLs; plugin disposal removed them.
-- Guard scope tests passed for nested scopes, exception cleanup, cross-thread isolation and no active scope outside bulk deposit.
-- The hook smoke test does not execute actual inventory transfers or prove UI input behavior in a running world. In-game validation still required.
