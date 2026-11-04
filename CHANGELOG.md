@@ -1,3 +1,16 @@
+# 0.2.3
+
+Protect registered tools and weapons during vanilla quick deposit (Alt + RMB). Preserve explicit manual transfers. Includes 0.2.2 routing fixes.
+
+# AutoSorter 0.2.2 — routing fixes / исправления маршрутизации
+
+RU: Запрещён перенос с базы на пристыкованный корабль. Разрешена выгрузка однотипного груза корабля на статическую базу. Добавлено переполнение в пустые контейнеры той же конструкции с доступным складом-образцом. Приоритет более вместительных приёмников; заполненные по массе пропускаются. Защита от смешивания категорий при назначении пустого контейнера. NoSort, владение, инструменты и конвейерные ограничения сохранены.
+
+EN: Block station-to-ship and peer-grid transfers. Allow single-category ship unloading to static stations. Add empty overflow on a grid with reachable seeded storage. Prefer larger destinations within each priority group, skip mass-full stores, and claim overflow categories immediately. Preserve NoSort, ownership, protected tools and conveyor checks.
+
+Limit: mobile space bases are not static stations. Live-world verification is still required. See README-RU.md / README.md.
+
+
 # Changelog / История изменений
 
 ## 0.2.1 — 2026-11-03
@@ -33,3 +46,5 @@ Update: close the game, back up any customized `AutoSorter.json`, and replace th
 English: introduced content-based container roles without renaming: ore, ingots/materials, components, and general mixed storage. Emptying a container clears its role. Optional NoSort exclusion; English and Russian instructions.
 
 Русский: назначение контейнеров по содержимому без переименования: руда, слитки/материалы, компоненты и общий смешанный склад. Опустошение сбрасывает назначение. Необязательное исключение NoSort; инструкции на английском и русском.
+
+

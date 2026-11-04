@@ -1,14 +1,21 @@
-# Validation — AutoSorter 0.2.1
+# Validation — AutoSorter 0.2.3
 
-Content-based assignment replaces category name tags. Empty or mixed inventories are general sources; inventories containing exclusively ore, materials or components are destinations for that category. No persistent assignment. Optional NoSort exclusion remains.
+2026-11-04
 
-Regression tests cover assignment from contents, repeated same-category stacks, empty/reset/reseed, mixtures and tools, ignoring old category tags, exclusions, no self-transfer, blocked paths, destination stability under transfers, no oscillation, and round-robin coverage.
+- Starting source: local AutoSorter 0.2.1 source; its binary SHA-256 matched installed D:\SE2Mods\AutoSorter\AutoSorter.dll: 5453911ECDA84DDB68DAF149F85D7C0D982B3A4EB30F82AD5CD35CB4FC637070.
+- Release build against installed Space Engineers 2 game assemblies: successful, no C# warnings/errors.
+- NuGet emitted NU1900 because its vulnerability-data endpoint was unreachable. Existing cached dependencies were used; no dependency versions changed. Vulnerability audit was not completed.
+- Standalone regression suite: 251 assertions passed, covering classification, exclusions, same-grid storage, empty overflow policy, category claims, station-to-ship blocking, mobile-to-static unloading, peer-grid isolation, and a simulated full-store/overflow scenario with conserved item count.
+- Hook smoke check: both input and session-update hooks installed and removed against actual installed game DLLs.
+- No live world loaded or modified. Capacity behavior of real inventories, connector topology, static-station detection in an actual docked world, conveyor filters and multiplayer are NOT validated by the standalone tests or hook smoke check.
 
-Release build and isolated load check use the installed Space Engineers 2 DLLs. The isolated check installs and disposes both MonoMod hooks; it does not load a world.
-
-Live game validation is still pending: discovery, transfers and quantity conservation, full targets, conveyor filters, pause/reload and coexistence with BuildPlanner. See README-RU.md for the test sequence. No game files or saves were changed.
-
-Final packaging succeeded with 115 assertions and 0 errors. NuGet emitted NU1900: vulnerability data could not be fetched; the online dependency audit was not completed. Isolated hook loading passed.
+A saved GridMotionType is used instead of transient body motion/parking state. Mobile space bases remain mobile; cross-grid transfer between mobile grids is intentionally disabled. Live-world checklist is in README-RU.md and README.md.
 
 
-0.2.1 adds tool-registry exclusion in AutoSorter. The separate BuildPlanner Alt+N patch passed 28 actual-filter checks; these are not AutoSorter gameplay tests. See CHANGELOG.md.
+0.2.3 additional validation:
+- Local installed AreaTools registry: three registered item GUIDs found in ToolsConfiguration_AreaTools.partialdef. No mod files are bundled.
+- Confirmed UseConveyorAction.DepositNonEssentialItems calls vanilla InProcessGameServerSessionComponent bulk deposit; the original bulk loop checks EssentialItems and calls TransferByIdx synchronously.
+- 28 assertions against the built protected-tool registry and actual game types passed, including all three AreaTools GUIDs with ore/material/component/all flags and ordinary unregistered materials.
+- All four hooks installed successfully against installed game DLLs; plugin disposal removed them.
+- Guard scope tests passed for nested scopes, exception cleanup, cross-thread isolation and no active scope outside bulk deposit.
+- The hook smoke test does not execute actual inventory transfers or prove UI input behavior in a running world. In-game validation still required.
